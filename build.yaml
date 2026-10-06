@@ -1,0 +1,9 @@
+builders:
+  kuma:
+    import: "package:kuma/builder.dart"
+    builder_factories: ["kumaBuilder"]
+    # The real outputs come from the `output` option (kuma.yaml / pubspec
+    # `kuma:` / builder options); this is the default.
+    build_extensions: { "$package$": ["lib/l10n/translations.g.dart"] }
+    auto_apply: root_package
+    build_to: source
