@@ -1,0 +1,8 @@
+{
+  "hapticsEnabled": "Haptic feedback",
+  "intensity": "Intensity: {level}",
+  "patternCount": {
+    "one": "{} pattern",
+    "other": "{} patterns"
+  }
+}

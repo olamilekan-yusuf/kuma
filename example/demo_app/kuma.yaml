@@ -1,0 +1,2 @@
+namespaces:
+  haptics: { package: demo_haptics, class: HapticsTranslations }
