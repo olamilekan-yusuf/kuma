@@ -1,0 +1,55 @@
+{
+  "retry": "Retry",
+  "resendIn": "Resend in {}",
+  "referralDateFormat": "{dayOrdinal} {monthYear}",
+  "itemCount": {
+    "one": "{} Item",
+    "two": "{} Items",
+    "other": "{} Items"
+  },
+  "episodeCount": {
+    "one": "{count} Episode",
+    "other": "{count} Episodes"
+  },
+  "testimonialSecs": {
+    "one": "{number} sec",
+    "other": "{number} secs"
+  },
+  "bookInProgressDescription": {
+    "one": "{}% complete · Earn 1 blessing",
+    "two": "{}% complete · Earn {} blessings",
+    "other": "{}% complete · Earn {} blessings"
+  },
+  "hrs": {
+    "one": "Hr",
+    "other": "Hrs"
+  },
+  "versesName": {
+    "one": "{length} Verse",
+    "other": "{length} Other Verses"
+  },
+  "versesCompletedSummary": {
+    "first": {
+      "one": "You completed a total of {totalVerses} verse ",
+      "other": "You completed a total of {totalVerses} verses "
+    },
+    "second": {
+      "one": "across {bookCount} book",
+      "other": "across {bookCount} books"
+    }
+  },
+  "requestPrayerTargets": {
+    "family": "I want to pray for my family",
+    "friend": "I want to pray for my friend",
+    "career": "I want to pray for my career",
+    "marriage": "I want to pray for my marriage",
+    "health": "I want to pray for my health"
+  },
+  "genesis": "Where And there went out a champion out of the camp of the Philistines, named Goliath, of Gath, whose height was six cubits...",
+  "Genesis": "Genesis",
+  "1Samuel": "1 Samuel",
+  "Apr": "Apr",
+  "donationSuccess": "Your donation was successful! 💜 Thank you for choosing to give — your kindness is now on its way to make a real difference.",
+  "greetingViewTitle": "Well done {}! You are all done for now.",
+  "prayerWordCount": "{} / {} words"
+}

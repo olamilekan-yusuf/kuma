@@ -1,0 +1,4 @@
+# For praises_core / praises_feature_impl. Set class_name to the class the
+# app's `namespaces:` entry expects (CoreTranslations, FeatureTranslations).
+role: package
+class_name: CoreTranslations

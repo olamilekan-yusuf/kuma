@@ -1,0 +1,54 @@
+{
+  "retry": "Intentar nuevamente",
+  "resendIn": "Reenvía en",
+  "referralDateFormat": "{day} de {monthYear}",
+  "itemCount": {
+    "one": "{} Artículo",
+    "two": "{} Artículos",
+    "other": "{} Artículos"
+  },
+  "episodeCount": {
+    "one": "{count} Episodio",
+    "other": "{count} Episodios"
+  },
+  "testimonialSecs": {
+    "one": "{number} seg",
+    "other": "{number} segs"
+  },
+  "bookInProgressDescription": {
+    "one": "{}% completado · Gana 1 bendición",
+    "two": "{}% completado · Gana {} bendiciones",
+    "other": "{}% completado · Gana {} bendiciones"
+  },
+  "hrs": {
+    "one": "H",
+    "other": "H"
+  },
+  "versesName": {
+    "one": "{length} versículo",
+    "other": "{length} Otros versículos"
+  },
+  "versesCompletedSummary": {
+    "first": {
+      "one": "Has completado {totalVerses} versículo ",
+      "other": "Has completado {totalVerses} versículos "
+    },
+    "second": {
+      "one": "en {bookCount} libro",
+      "other": "en {bookCount} libros"
+    }
+  },
+  "requestPrayerTargets": {
+    "family": "Quiero orar por mi familia",
+    "friend": "Quiero orar por mi amigo",
+    "career": "Quiero orar por mi carrera",
+    "marriage": "Quiero orar por mi matrimonio",
+    "health": "Quiero orar por mi salud"
+  },
+  "genesis": "Y salió un guerrero del campo de los filisteos, llamado Goliat, de Gate, cuya altura era de seis codos...",
+  "Genesis": "Génesis",
+  "1Samuel": "1 Samuel",
+  "e.g": "Ejemplo",
+  "greetingViewTitle": "¡Muy bien!{}¿Todo listo para empezar?",
+  "prayerWordCount": "{} / {} palabras"
+}
