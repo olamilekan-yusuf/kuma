@@ -1,19 +1,29 @@
 # kuma
 
-Type-safe accessors and cross-locale validation for [easy_localization](https://pub.dev/packages/easy_localization) JSON files.
+kuma turns your [easy_localization](https://pub.dev/packages/easy_localization) JSON files into typed Dart getters and fails the build when the files disagree with each other.
 
-easy_localization stays the runtime: it still loads the JSON, switches locales and resolves plurals. kuma reads the same files, checks them against each other, and generates a thin typed layer over `tr()` and `plural()`:
+easy_localization keeps doing the runtime work. It loads the JSON, switches locales and picks plural forms. kuma reads the same files, checks them, and writes a small class that calls `tr()` and `plural()` for you.
 
 ```dart
-Text(context.t.retry);                       // was context.localize('retry')
-Text(context.t.episodeCount(n));             // was plural('episodeCount', n, namedArgs: {'count': '$n'})
-Text(context.t.resendIn('0:30'));            // was 'resendIn'.tr(args: ['0:30'])
-Text(context.t.core.pleaseCheckYourInternetConnectionAndTryAgain);  // a package's keys
+// before
+Text(context.localize('retry'));
+Text(plural('episodeCount', n, namedArgs: {'count': '$n'}));
+Text('resendIn'.tr(args: ['0:30']));
 
-final label = Translations.instance.itemCount(3);   // outside widgets
+// after
+Text(context.t.retry);
+Text(context.t.episodeCount(n));
+Text(context.t.resendIn('0:30'));
+Text(context.t.core.pleaseCheckYourInternetConnectionAndTryAgain); // key from another package
+
+final label = Translations.instance.itemCount(3); // outside the widget tree
 ```
 
-## Setup
+A typo in a key, a missing argument or a Spanish file that lacks a key now breaks the build instead of showing a raw key string to a user.
+
+## Quick start
+
+Add kuma as a dev dependency:
 
 ```yaml
 # pubspec.yaml
@@ -23,126 +33,137 @@ dev_dependencies:
       url: git@github.com:Yohanna-Foundation/kuma.git
 ```
 
-Add a `kuma.yaml` next to `pubspec.yaml`, or a `kuma:` section in `pubspec.yaml`. Every option has a default, so an empty config works.
+Put a `kuma.yaml` next to `pubspec.yaml`, or a `kuma:` section inside `pubspec.yaml`. Every option has a default, so an empty file works. Then generate with either tool:
 
-Then do either of the following:
+```bash
+dart run build_runner build   # or `watch`
+dart run kuma generate        # validate, then write
+dart run kuma check           # validate only
+```
 
-- **build_runner.** `dart run build_runner build` (or `watch`). The builder applies to the root package automatically, and `assets/**` is a default build source, so no `build.yaml` is needed.
-- **CLI.** `dart run kuma generate` to validate and write, or `dart run kuma check` to validate only.
-
-Both run the same pipeline. Errors stop generation: the CLI exits with `1`, and the builder fails the build.
+Both run the same steps and stop on the first failed one:
 
 ```
 read JSON → parse → validate across locales → check namespace packages → generate
 ```
 
-## What it checks
+With errors, the CLI exits with `1` and build_runner fails the build. build_runner needs no `build.yaml`, because the builder applies to the root package and `assets/**` is already a build source.
 
-| Severity | Code | Meaning |
-|---|---|---|
-| error | `missing` | Key absent in a locale. The key set is the union over all locales. |
-| error | `kind` | Key is a string in one locale and a plural or namespace in another |
-| error | `placeholder` | `{name}`s, or the number of `{}`, differ between locales |
-| error | `plural` | Plural without `other` |
-| error | `unreachable` | Key contains `.`, which easy_localization splits on |
-| error | `collision` | Two keys map to the same Dart name (`genesis` / `Genesis`) |
-| error | `plural-count` | kuma can't tell which placeholder is the count; set `plural_count` |
-| error | `overlap` | Same key in this package and a namespace package, or in two packages |
-| error | `namespace` / `stale` | Namespace package manifest missing, wrong class, or older than its JSON |
-| error | `stale-output` | `check` with `role: package`: committed output is out of date |
-| warning | `plural` | A form the plural rules expect is missing, e.g. `one` |
-| warning | `mixed-args` | `{}` and `{name}` in one string |
-| warning | `link` | `@:` links aren't resolved, so linked placeholders aren't typed |
-| warning | `locale` | A file exists for a locale not in `locales` |
-| info | `plural` | Forms that can never be selected under the configured rules |
+To call `kuma` without `dart run`, activate it once. Edits to a local checkout apply on the next run.
 
-## Generated signatures
+```bash
+dart pub global activate --source path ~/projects/kuma
+export PATH="$PATH:$HOME/.pub-cache/bin"
+```
+
+## What gets generated
 
 | JSON | Dart |
 |---|---|
 | `"Retry"` | `String get retry` |
 | `"Hello {name}"` | `String greeting({required String name})` |
-| `"Resend in {}"` | `String resendIn(String arg0)`. Name it via `param_names`. |
+| `"Resend in {}"` | `String resendIn(String arg0)`. Name the argument with `param_names`. |
 | plural with one `{}` | `String itemCount(num count, {NumberFormat? format})`. The count fills `{}`. |
 | plural with one `{name}` | `String episodeCount(num count, {NumberFormat? format})`. Passes `name: 'count'`. |
-| plural with 2+ `{}` | `String x(num count, String arg0, String arg1)`. easy_localization stops auto-filling the count once `args` is passed. |
-| plural with no placeholders | `String hrs(num count)` |
+| plural with two or more `{}` | `String x(num count, String arg0, String arg1)`. easy_localization stops filling in the count once `args` is passed. |
+| plural with no placeholder | `String hrs(num count)` |
 | nested map | `HomeTranslations get home` |
 
-Key strings passed to `tr()` are always the original JSON paths. kuma never passes `args: []`, because easy_localization treats an empty list as "args given" and leaves `{}` unfilled.
+The strings passed to `tr()` are the original JSON paths. kuma never passes `args: []`, because easy_localization treats an empty list as "args given" and leaves `{}` unfilled.
+
+## What it checks
+
+| Severity | Code | Meaning |
+|---|---|---|
+| error | `missing` | A key is absent in a locale. The key set is the union over all locales. |
+| error | `kind` | A key is a string in one locale and a plural or namespace in another. |
+| error | `placeholder` | The `{name}`s, or the number of `{}`, differ between locales. |
+| error | `plural` | A plural has no `other`. |
+| error | `unreachable` | A key contains `.`, which easy_localization splits on. |
+| error | `collision` | Two keys map to the same Dart name, like `genesis` and `Genesis`. |
+| error | `plural-count` | kuma can't tell which placeholder is the count. Set `plural_count`. |
+| error | `overlap` | The same key exists in two sources. See [Overlapping keys](#overlapping-keys). |
+| error | `namespace`, `stale` | A package manifest is missing, names the wrong class, or is older than its JSON. |
+| error | `stale-output` | With `role: package`, `check` found committed output that is out of date. |
+| error | `config` | Two runs write to the same output file. |
+| warning | `plural` | A form the plural rules expect is missing, like `one`. |
+| warning | `mixed-args` | One string uses both `{}` and `{name}`. |
+| warning | `link` | An `@:` link isn't resolved, so the linked placeholders aren't typed. |
+| warning | `locale` | A file exists for a locale that isn't in `locales`. |
+| info | `plural` | A form can never be selected under the configured rules. |
 
 ## Packages and namespaces
 
-A library that ships translations sets `role: package`. It then generates its class with a `static const instance` but no `BuildContext` extension, plus a manifest (`translations.kuma.json`) listing its keys and a fingerprint of its JSON. The generated file and the manifest must reach consumers, either committed or added by the release tag.
+A library that ships its own strings sets `role: package`. kuma then writes two files into the library:
 
-The app maps each package to a namespace:
+- a class with a `static const instance`, and no `BuildContext` extension
+- `translations.kuma.json`, the manifest, with the library's key list and a fingerprint of its JSON
+
+Commit the generated file and the manifest, or add them in the release tag. Consumers read both from the package's `lib/`.
+
+The app maps each package to a name:
 
 ```yaml
 namespaces:
   core: { package: praises_core, class: CoreTranslations }
 ```
 
-That generates `context.t.core`. The app reads each manifest from the package's `lib/`, which both build_runner and the CLI can read. It fails when the app and a package define the same key, because easy_localization merges all loaders into one map and one source would silently win. `kuma check` also compares the manifest fingerprint with the package's JSON. build_runner can't read another package's assets, so the builder skips that comparison.
+kuma then adds `context.t.core`. For each namespace it also does the following:
 
-### Example: a package with its own strings
+1. Finds the package through `.dart_tool/package_config.json`.
+2. Reads the manifest and checks that its class name matches `class`.
+3. Compares the manifest's keys with the app's keys.
+4. With the CLI, compares the manifest fingerprint with the package's current JSON. build_runner can only read another package's `lib/`, so the builder skips this step. Run `kuma check` in CI to cover it.
 
-[`example/`](example/) is a working pair: `demo_haptics` is a package that ships translations, and `demo_app` consumes it. A package like `yohanna_haptics` needs this only if it owns UI text. One without translation files needs nothing.
+A package that has no translation files, like a native plugin, needs none of this.
+
+### Example
+
+[`example/`](example/) holds a package that owns strings (`demo_haptics`) and an app that uses it (`demo_app`).
 
 ```
 example/
-  demo_haptics/                  # role: package
-    kuma.yaml                    #   role: package, class_name: HapticsTranslations
+  demo_haptics/                    role: package
+    kuma.yaml                      role: package, class_name: HapticsTranslations
     assets/translations/{en,es}.json
-    lib/l10n/translations.g.dart #   generated, committed
+    lib/l10n/translations.g.dart   generated, committed
     lib/l10n/translations.kuma.json
-  demo_app/                      # role: app
-    kuma.yaml                    #   namespaces: { haptics: { package: demo_haptics, class: HapticsTranslations } }
+  demo_app/                        role: app
+    kuma.yaml                      namespaces: { haptics: { package: demo_haptics, class: HapticsTranslations } }
     assets/translations/{en,es}.json
-    lib/l10n/translations.g.dart #   generated; context.t.haptics.* forwards to the package
+    lib/l10n/translations.g.dart   generated, forwards context.t.haptics to the package
 ```
 
-Run order, from the repo root:
+Generate the package first and commit its output. The app reads the manifest, so it goes second:
 
 ```bash
-cd example/demo_haptics && dart pub get && dart run kuma generate   # 1. package first, then commit lib/l10n/
-cd ../demo_app          && dart pub get && dart run kuma generate   # 2. app reads the package's manifest
+cd example/demo_haptics && dart pub get && dart run kuma generate
+cd ../demo_app          && dart pub get && dart run kuma generate
 ```
 
 In the app:
 
 ```dart
-Text(context.t.settings);                         // app key
-Text(context.t.haptics.hapticsEnabled);           // package key
-Text(context.t.haptics.intensity(level: 'High')); // package key with a placeholder
-Text(context.t.haptics.patternCount(3));          // package plural
+Text(context.t.settings);                         // the app's own key
+Text(context.t.haptics.hapticsEnabled);           // a package key
+Text(context.t.haptics.intensity(level: 'High')); // with a placeholder
+Text(context.t.haptics.patternCount(3));          // a plural
 Translations.instance.haptics.hapticsEnabled;     // outside widgets
 ```
 
-What `dart run kuma check` catches in the app:
+What `kuma check` reports in the app when you break something:
 
-| You do | Result |
+| You do this | kuma reports |
 |---|---|
-| Edit the package's JSON and don't regenerate it | `stale` in the app, `stale-output` in the package |
+| Edit the package's JSON and skip `generate` | `stale` in the app, `stale-output` in the package |
 | Define `hapticsEnabled` in the app's JSON too | `overlap` |
-| Change the package's `class_name` | `namespace` (the app expects `HapticsTranslations`) |
+| Rename the package's `class_name` | `namespace`, because the app expects `HapticsTranslations` |
 
-The example's generated code needs `easy_localization` and Flutter to compile. The example pubspecs only contain what kuma needs to run, and the folder is excluded from analysis.
-
-### Allowing overlap
-
-easy_localization merges every loader into one map, so a key defined in the app and a package (or in two packages, or a micro-app) silently resolves to whichever loads last. kuma reports that as an `overlap` error. To permit known cases, list them:
-
-```yaml
-allow_overlap:
-  - somethingWentWrongPleaseTryAgain
-  - "unauthorized*"
-```
-
-Only the listed keys are skipped, so new overlaps are still caught. For a migration period, `overlap: warning` reports every overlap as a warning instead (an error again with `warnings_as_errors`), and `overlap: ignore` turns the check off. Both options can be combined: listed keys are skipped, the rest follow `overlap`. Which definition wins at runtime is still decided by loader order, so prefer removing the duplicate.
+The generated example code needs Flutter and `easy_localization` to compile. The example pubspecs hold only what kuma needs, and `analysis_options.yaml` skips the folder.
 
 ## Micro-apps
 
-A micro-app that ships its own translation files gets its own generated class. List it under `micro_apps`, keyed by its id:
+A micro-app that ships its own files under `assets/translations/<id>/` gets its own class. List it under `micro_apps`, keyed by id:
 
 ```yaml
 micro_apps:
@@ -150,7 +171,7 @@ micro_apps:
     locales: [en]
 ```
 
-Defaults for the id `kids`:
+For the id `kids`, the defaults are:
 
 | Option | Default |
 |---|---|
@@ -160,62 +181,57 @@ Defaults for the id `kids`:
 | `context_getter` | `T` |
 | `key_prefix` | `kids` |
 
-Any option except `role`, `namespaces` and `micro_apps` can be set per micro-app. `warnings_as_errors` is inherited.
+Set any option except `role`, `namespaces` and `micro_apps` per micro-app. `warnings_as_errors` carries over from the app.
 
-Each micro-app is read, validated and generated on its own, so its locales don't have to match the app's. easy_localization merges every loader into one map, so the generated code prefixes each key with `key_prefix`: `String get kidsHome => tr('kids.kidsHome')`, used as `context.T.kidsHome`. That is the same key a scoped `context.localize('kidsHome')` resolves to. A root object named like the prefix (`{"kids": {"kidsHome": "…"}}`) is unwrapped first, so a nested and a flat file give the same getters. `exclude`, `param_names` and `plural_count` use the key without the prefix. The app's `input_dir` is not read recursively, so `kids/en.json` is never mistaken for a second `en` locale of the app.
+easy_localization merges every loader into one map, so kuma prefixes each key with `key_prefix`:
 
-The micro-app's keys join the overlap check: an `overlap` error is raised if the app (or a package) defines a key the micro-app also defines. Diagnostics from a micro-app are prefixed with `[kids]`.
+```dart
+String get kidsHome => el.tr('kids.kidsHome');   // generated
+Text(context.T.kidsHome);                        // your code
+```
 
-## Config
+That is the key a scoped `context.localize('kidsHome')` resolves to. If the JSON has a single root object with the same name as the prefix, kuma unwraps it, so `{"kids": {"kidsHome": "Kids mode"}}` and `{"kidsHome": "Kids mode"}` give the same getter.
 
-| Option | Default | |
-|---|---|---|
-| `role` | `app` | `app` or `package` |
-| `input_dir` | `assets/translations` | |
-| `base_locale` | `en` | Source of doc comments and signatures |
-| `locales` | all files | Expected locales. Extra files warn and are skipped. |
-| `output` | `lib/l10n/translations.g.dart` | |
-| `class_name` | `Translations` | |
-| `context_extension` | `true` for apps | Generates `context.<context_getter>` |
-| `context_getter` | `t` | |
-| `key_prefix` | none (the id for micro-apps) | Prepended to every key the generated code looks up. A same-named root object in the JSON is unwrapped. |
-| `namespaces` | `{}` | `name: {package, class, import}` |
-| `micro_apps` | `{}` | `id: {…options}`. See [Micro-apps](#micro-apps). |
-| `plural_rules` | `fallback` | `fallback` (easy_localization's default `ignorePluralRules: true`: 0/1/2/other), `cldr`, `strict` |
-| `strict_plural_forms` | `[one, other]` | For `strict` |
-| `plural_count` | `{}` | Per-key count placeholder, or `none` |
-| `param_names` | `{}` | Per-key names for `{}` arguments |
-| `allow_positional_args` | `true` | |
-| `missing_key` | `error` | or `warning` |
-| `exclude` | `[]` | Globs over key paths (`*`, `?`, `[...]`). Validated but not generated. |
-| `overlap` | `error` | How a key defined in two sources is reported: `error`, `warning` or `ignore` (check off). |
-| `allow_overlap` | `[]` | Globs over runtime key paths that may be defined in more than one source. Skipped by the check. |
-| `digit_prefix` | `n` | `1Samuel` → `n1Samuel` |
-| `warnings_as_errors` | `false` | Also `--warnings-as-errors` |
+Each micro-app is read, validated and generated by itself, so its locales don't have to match the app's. The app's `input_dir` is not read recursively, so `kids/en.json` is never taken for a second `en` locale of the app. Options like `exclude`, `param_names` and `plural_count` use the key without the prefix. Diagnostics from a micro-app start with `[kids]`.
 
-### Every option
+## Overlapping keys
+
+easy_localization merges all loaders into one map. If the app, a package or a micro-app define the same key, the loader that runs last wins and nothing tells you. kuma reports every such key as an `overlap` error, including the case where one source has a string and another has a namespace under the same name.
+
+To allow known cases, list them:
 
 ```yaml
-# kuma.yaml (or a `kuma:` section in pubspec.yaml)
+allow_overlap:
+  - somethingWentWrongPleaseTryAgain
+  - "unauthorized*"
+```
+
+Only the listed keys are skipped, so new overlaps still fail. During a migration you can also set `overlap: warning`, which reports each overlap as a warning, or `overlap: ignore`, which turns the check off. Combined with `allow_overlap`, listed keys are skipped and the rest follow `overlap`. Loader order still decides which value shows at runtime, so remove the duplicate when you can.
+
+## Configuration
+
+kuma reads `kuma.yaml`, then the `kuma:` section of `pubspec.yaml`, then falls back to defaults. This file sets everything:
+
+```yaml
 role: app                          # app | package
-input_dir: assets/translations     # *.json, one file per locale; not recursive
+input_dir: assets/translations     # *.json, one file per locale, not recursive
 base_locale: en                    # source of doc comments and signatures
 locales: [en, es, pt]              # omit to use every file found
 output: lib/l10n/translations.g.dart
 class_name: Translations
-context_extension: true            # default: true for app, false for package
+context_extension: true            # default true for app, false for package
 context_getter: t                  # context.t
-key_prefix: kids                   # prepended to looked-up keys; see Micro-apps
+key_prefix: kids                   # prepended to looked-up keys, see Micro-apps
 
-namespaces:                        # other packages' generated classes
+namespaces:                        # generated classes from other packages
   core: { package: praises_core, class: CoreTranslations }
   feature:
     package: praises_feature_impl
     class: FeatureTranslations
     import: package:praises_feature_impl/l10n/translations.g.dart
 
-micro_apps:                        # same options as above, minus role,
-  kids:                            # namespaces and micro_apps
+micro_apps:                        # same options, minus role, namespaces, micro_apps
+  kids:
     input_dir: assets/translations/kids
     output: lib/micro_apps/kids/l10n/translations.g.dart
     class_name: KidsTranslations
@@ -224,7 +240,7 @@ micro_apps:                        # same options as above, minus role,
     locales: [en]
 
 plural_rules: fallback             # fallback | cldr | strict
-strict_plural_forms: [one, other]  # for strict
+strict_plural_forms: [one, other]  # used by strict
 plural_count:                      # per-key count placeholder, or none
   itemCount: count
   hrs: none
@@ -232,22 +248,45 @@ param_names:                       # names for positional {} arguments
   resendIn: [time]
 allow_positional_args: true
 missing_key: error                 # error | warning
-exclude:                           # globs over key paths, validated only
+exclude:                           # globs over key paths, validated but not generated
   - Genesis
   - "[1-3]*"
 overlap: error                     # error | warning | ignore
 allow_overlap:                     # keys that may exist in two sources
   - somethingWentWrongPleaseTryAgain
   - "unauthorized*"
-digit_prefix: n                    # 1Samuel -> n1Samuel
+digit_prefix: n                    # 1Samuel becomes n1Samuel
 warnings_as_errors: false
 ```
 
-The CLI also accepts `--config <file>`, `--root <dir>`, `--format text|json`, `--warnings-as-errors` and `--verbose`.
+| Option | Default | Notes |
+|---|---|---|
+| `role` | `app` | `app` or `package` |
+| `input_dir` | `assets/translations` | |
+| `base_locale` | `en` | Source of doc comments and signatures |
+| `locales` | every file found | Extra files warn and are skipped |
+| `output` | `lib/l10n/translations.g.dart` | |
+| `class_name` | `Translations` | |
+| `context_extension` | `true` for apps | Generates `context.<context_getter>` |
+| `context_getter` | `t` | `T` for micro-apps |
+| `key_prefix` | none | The id for micro-apps. Prepended to every key the generated code looks up. |
+| `namespaces` | `{}` | `name: {package, class, import}` |
+| `micro_apps` | `{}` | `id: {options}` |
+| `plural_rules` | `fallback` | `fallback` matches easy_localization's default `ignorePluralRules: true` and knows 0, 1, 2 and other. `cldr` uses per-language rules. `strict` requires `strict_plural_forms`. |
+| `strict_plural_forms` | `[one, other]` | Used by `strict` |
+| `plural_count` | `{}` | Per-key count placeholder, or `none` |
+| `param_names` | `{}` | Per-key names for `{}` arguments |
+| `allow_positional_args` | `true` | |
+| `missing_key` | `error` | `error` or `warning` |
+| `exclude` | `[]` | Globs over key paths with `*`, `?` and `[...]` |
+| `overlap` | `error` | `error`, `warning` or `ignore` |
+| `allow_overlap` | `[]` | Globs over runtime key paths |
+| `digit_prefix` | `n` | Prefix for names that start with a digit |
+| `warnings_as_errors` | `false` | Same as `--warnings-as-errors` |
 
-Builder options in `build.yaml` override the file. `config: path.yaml` points at another config file.
+`exclude` is for keys you look up with a variable, like Bible book names. They keep the `context.localize(key)` call, and kuma still validates them.
 
-Example configs for the Yohanna apps are in [`presets/`](presets/).
+Options in `build.yaml` override the file, and `config: path.yaml` points the builder at another file. The CLI takes `--config <file>`, `--root <dir>`, `--format text|json`, `--warnings-as-errors` and `--verbose`. Ready-made configs for the Yohanna apps and packages are in [`presets/`](presets/).
 
 ## Development
 
@@ -255,4 +294,4 @@ Example configs for the Yohanna apps are in [`presets/`](presets/).
 dart test
 ```
 
-To refresh golden files, run `UPDATE_GOLDENS=1 dart test`. `test/fixtures/yohanna/` is trimmed from the real app files and keeps every issue kuma was built to catch.
+Run `UPDATE_GOLDENS=1 dart test` to rewrite the golden files. `test/fixtures/yohanna/` holds trimmed copies of the real app files and keeps every problem kuma was built to catch.
