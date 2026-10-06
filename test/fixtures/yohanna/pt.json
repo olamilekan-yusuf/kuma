@@ -1,0 +1,56 @@
+{
+  "retry": "Tentar novamente",
+  "resendIn": "Reenvie em {}",
+  "referralDateFormat": "{day}º de {monthYear}",
+  "itemCount": {
+    "one": "{} Iten",
+    "two": "{} Itens",
+    "other": "{} Itens"
+  },
+  "episodeCount": {
+    "one": "{count} Episódio",
+    "other": "{count} Episódios"
+  },
+  "testimonialSecs": {
+    "one": "{number} seg",
+    "other": "{number} segs"
+  },
+  "bookInProgressDescription": {
+    "one": "{}% completo · Ganhe 1 bênção",
+    "two": "{}% completo · Ganhe {} bênçãos",
+    "other": "{}% completo · Ganhe {} bênçãos"
+  },
+  "hrs": {
+    "one": "H",
+    "other": "H"
+  },
+  "versesName": {
+    "one": "{length} versículo",
+    "other": "{length} Outros versículos"
+  },
+  "versesCompletedSummary": {
+    "first": {
+      "one": "Você completou {totalVerses} versículo ",
+      "other": "Você completou {totalVerses} versículos "
+    },
+    "second": {
+      "one": "em {bookCount} livro",
+      "other": "em {bookCount} livros"
+    }
+  },
+  "requestPrayerTargets": {
+    "family": "Quero orar pela minha família",
+    "friend": "Quero orar pelo meu amigo",
+    "career": "Quero orar pela minha carreira",
+    "marriage": "Quero orar pelo meu casamento",
+    "health": "Quero orar pela minha saúde"
+  },
+  "genesis": "E saiu um campeão do campo dos filisteus, chamado Golias, de Gate, cuja altura era de seis côvados...",
+  "Genesis": "Gênesis",
+  "1Samuel": "1 Samuel",
+  "e.g": "Exemplo",
+  "takesLessThanAMinute.": "leva menos de um minuto.",
+  "donationSuccess": "Sua doação foi bem-sucedida! 💜 Obrigado por decidir fazer a diferença e impacto na vida dos que contam com a gente — sua doação foi bem-sucedida.",
+  "greetingViewTitle": "Muito bem {}! Tudo pronto para iniciar?.",
+  "prayerWordCount": "{} / {} palavras"
+}

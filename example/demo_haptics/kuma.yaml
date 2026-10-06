@@ -1,0 +1,3 @@
+# A package generates its own class and a manifest, and commits both.
+role: package
+class_name: HapticsTranslations

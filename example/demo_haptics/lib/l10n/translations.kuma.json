@@ -1,0 +1,15 @@
+{
+  "kuma": 1,
+  "class": "HapticsTranslations",
+  "fingerprint": "3082f1a660b69b559b596d814b8b6f882bd316cd3b243054f0f809575b25b67b",
+  "input_dir": "assets/translations",
+  "locales": [
+    "en",
+    "es"
+  ],
+  "keys": [
+    "hapticsEnabled",
+    "intensity",
+    "patternCount"
+  ]
+}
